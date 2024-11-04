@@ -27,11 +27,9 @@ fun SavePicturePublicPictures() {
     val imageUri = mutable<Uri?>(null)
 
     val onClick = {
-      val uri = activity.pictureUriInsidePictures("IMG_SS_${System.currentTimeMillis()}.jpg")
-      if (uri != null) //TODO: Handluj ak null
-        activity.capturePhotoAndStoreToUri(uri) {
-          imageUri.value = it
-        }
+      activity.capturePhotoAndStoreToPictures {
+        imageUri.value = it
+      }
     }
 
     BackHandler(imageUri.value != null) {
@@ -50,15 +48,4 @@ fun SavePicturePublicPictures() {
       }
     }
   }
-}
-
-private fun Context.pictureUriInsidePictures(fileName: String): Uri? {
-  val contentValues = ContentValues().apply {
-    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/")
-//    put(MediaStore.Images.Media.IS_PENDING, 1) TODO: Preskumat mozne vyuzitie
-  }
-
-  return contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
 }

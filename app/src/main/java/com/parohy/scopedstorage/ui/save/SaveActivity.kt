@@ -1,6 +1,10 @@
 package com.parohy.scopedstorage.ui.save
 
+import android.content.ContentValues
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -81,7 +85,7 @@ open class SaveActivity: ComponentActivity() {
 
   /*Preco ma kazdy typ vlastny CreateDocument? Pozri si @Deprecated koment pre triedu CreateDocument...*/
 
-  /*Odfotim a ulozim na URI*/
+  /*region Odfotim a ulozim na URI*/
   fun capturePhotoAndStoreToUri(uri: Uri, onResult: (Uri?) -> Unit) {
     if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
       capturePhoto(uri, onResult)
@@ -92,13 +96,56 @@ open class SaveActivity: ComponentActivity() {
   }
   /*endregion*/
 
-  /*Nakamerujema ulozim na URI*/
+  /*region Nakamerujema ulozim na URI*/
   fun captureVideoAndStoreToUri(uri: Uri, onResult: (Uri?) -> Unit) {
     if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
       captureVideo(uri, onResult)
     else
       requestPermission(android.Manifest.permission.CAMERA) {
         captureVideo(uri, onResult)
+      }
+  }
+  /*endregion*/
+
+  /*region Odfotim a ulozim do Pictures*/
+  private fun pictureUriInsidePictures(fileName: String): Uri? {
+    val contentValues = ContentValues().apply {
+      put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+      put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+    }
+
+    val collection: Uri =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/")
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+      } else {
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+
+        // POZOR! Je potrebne skontrolovat ci existuje
+        if (!dir.exists())
+          dir.mkdirs()
+
+        val filePath = dir.absolutePath + fileName
+
+        contentValues.put(MediaStore.Files.FileColumns.DATA, filePath)
+        MediaStore.Images.Media.getContentUri("external")
+      }
+
+    return contentResolver.insert(collection, contentValues)
+  }
+
+  fun capturePhotoAndStoreToPictures(onResult: (Uri?) -> Unit) {
+    val block = {
+      val uri = pictureUriInsidePictures("IMG_SS_${System.currentTimeMillis()}.jpg")
+      if (uri != null) //TODO: Handluj ak null
+        capturePhoto(uri, onResult)
+    }
+
+    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+      block()
+    else
+      requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+        block()
       }
   }
   /*endregion*/

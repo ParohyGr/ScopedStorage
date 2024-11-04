@@ -20,8 +20,8 @@ fun Home(
   goToMove: () -> Unit
 ) {
   ButtonsScreen(title = stringResource(R.string.app_name)) {
-    SSButton(text = "Chcem nacitat subor", onClick = goToLoad)
     SSButton(text = "Chcem ulozit subor", onClick = goToSave)
+    SSButton(text = "Chcem nacitat subor", onClick = goToLoad)
 
     Spacer(modifier = Modifier.height(32.dp))
     Text(text = "Este to nie je done")
