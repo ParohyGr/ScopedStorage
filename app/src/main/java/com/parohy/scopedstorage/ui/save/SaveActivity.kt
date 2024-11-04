@@ -132,7 +132,7 @@ open class SaveActivity: ComponentActivity() {
 
         val filePath = "${dir.absolutePath}/$fileName"
 
-        contentValues.put(MediaStore.Files.FileColumns.DATA, filePath)
+        contentValues.put(MediaStore.Images.Media.DATA, filePath)
         MediaStore.Images.Media.getContentUri("external")
       }
 
@@ -147,6 +147,7 @@ open class SaveActivity: ComponentActivity() {
         capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
     }
 
+    /*Pre Android 13+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
       if (isGranted(android.Manifest.permission.CAMERA))
         block()
@@ -199,6 +200,75 @@ open class SaveActivity: ComponentActivity() {
         capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
     }
 
+    if (isGranted(android.Manifest.permission.CAMERA))
+      block()
+    else
+      requestPermission(android.Manifest.permission.CAMERA) {
+        block()
+      }
+  }
+  /*endregion*/
+
+  /*region Odfotim a ulozim podla vyberu*/
+  private val createPictureDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("image/jpeg")) { uri: Uri? ->
+    _onFileCreated?.invoke(uri)
+    _onFileCreated = null
+  }
+
+  fun capturePhotoAndStoreToCustom(onResult: (Uri?) -> Unit) {
+    val block = {
+      _onFileCreated = { uri ->
+        if (uri != null) // TODO: Handluj ak sa nepodari vytvorit
+          capturePhoto(uri, onResult)
+      }
+      createPictureDocument.launch("Custom_SS_${System.currentTimeMillis()}.jpg")
+    }
+
+    if (isGranted(android.Manifest.permission.CAMERA))
+      block()
+    else
+      requestPermission(android.Manifest.permission.CAMERA) {
+        block()
+      }
+  }
+  /*endregion*/
+
+  /*region Nakamerujem a ulozim do Movies*/
+  private fun Context.videoUriInsideMovies(fileName: String): Uri? {
+    val contentValues = ContentValues().apply {
+      put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+      put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+    }
+
+    val collection: Uri =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/")
+        MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+      } else {
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+
+        // POZOR! Je potrebne skontrolovat ci existuje
+        if (!dir.exists())
+          dir.mkdirs()
+
+        val filePath = "${dir.absolutePath}/$fileName"
+
+        contentValues.put(MediaStore.Video.Media.DATA, filePath)
+        MediaStore.Video.Media.getContentUri("external")
+      }
+
+    return contentResolver.insert(collection, contentValues)
+  }
+
+  fun captureVideoAndStoreToMovies(onResult: (Uri?) -> Unit) {
+    val block = {
+      val uri = videoUriInsideMovies("VIDEO_SS_${System.currentTimeMillis()}.mp4")
+      Log.i("SaveActivity", "captureVideoAndStoreToMovies: $uri")
+      if (uri != null) //TODO: Handluj ak null
+        captureVideo(uri, onResult) //TODO: Handluj ak sa nepodari nakamerovat/cancelne nakamerovanie
+    }
+
+    /*Pre Android 13+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
       if (isGranted(android.Manifest.permission.CAMERA))
         block()
@@ -216,19 +286,39 @@ open class SaveActivity: ComponentActivity() {
   }
   /*endregion*/
 
-  /*region Odfotim a ulozim podla vyberu*/
-  private val createPictureDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("image/jpeg")) { uri: Uri? ->
-    _onFileCreated?.invoke(uri)
-    _onFileCreated = null
+  /*region Nakamerujem a ulozim do Downloads*/
+  private fun videoUriInsideDownloads(fileName: String): Uri? {
+    val contentValues = ContentValues().apply {
+      put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+      put(MediaStore.Downloads.MIME_TYPE, "video/mp4")
+    }
+
+    val collection: Uri =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        contentValues.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+      } else {
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+        // POZOR! Je potrebne skontrolovat ci existuje
+        if (!dir.exists())
+          dir.mkdirs()
+
+        val filePath = "${dir.absolutePath}/$fileName"
+
+        contentValues.put(MediaStore.Downloads.DATA, filePath)
+        MediaStore.Files.getContentUri("external")
+      }
+
+    return contentResolver.insert(collection, contentValues)
   }
 
-  fun capturePhotoAndStoreToCustom(onResult: (Uri?) -> Unit) {
+  fun captureVideoAndStoreToDownloads(onResult: (Uri?) -> Unit) {
     val block = {
-      _onFileCreated = { uri ->
-        if (uri != null) // TODO: Handluj ak sa nepodari vytvorit
-          capturePhoto(uri, onResult)
-      }
-      createPictureDocument.launch("Custom_SS_${System.currentTimeMillis()}.jpg")
+      val uri = videoUriInsideDownloads("VIDEO_SS_${System.currentTimeMillis()}.mp4")
+      Log.i("SaveActivity", "captureVideoAndStoreToDownloads: $uri")
+      if (uri != null) //TODO: Handluj ak null
+        captureVideo(uri, onResult) //TODO: Handluj ak sa nepodari nakamerovat/cancelne nakamerovanie
     }
 
     if (isGranted(android.Manifest.permission.CAMERA))
@@ -263,6 +353,8 @@ open class SaveActivity: ComponentActivity() {
       }
   }
   /*endregion*/
+
+  /*region Vytvor dokument*/
 
   /*region Vytvorim PDF dokument a ulozim podla vyberu*/
   private val createPdfDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri: Uri? ->

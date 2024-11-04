@@ -29,11 +29,9 @@ fun SaveVideoPublicVideos() {
     val videoUri = mutable<Uri?>(null)
 
     val onClick = {
-      val uri = activity.videoUriInsideMovies("IMG_SS_${System.currentTimeMillis()}.jpg")
-      if (uri != null) //TODO: Handluj ak null
-        activity.captureVideoAndStoreToUri(uri) {
-          videoUri.value = it
-        }
+      activity.captureVideoAndStoreToMovies {
+        videoUri.value = it
+      }
     }
 
     LaunchedEffect(videoUri.value) {
@@ -70,15 +68,4 @@ fun SaveVideoPublicVideos() {
       }
     }
   }
-}
-
-private fun Context.videoUriInsideMovies(fileName: String): Uri? {
-  val contentValues = ContentValues().apply {
-    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-    put(MediaStore.Images.Media.MIME_TYPE, "video/mp4")
-    put(MediaStore.Images.Media.RELATIVE_PATH, "Movies/")
-//    put(MediaStore.Images.Media.IS_PENDING, 1) TODO: Preskumat mozne vyuzitie
-  }
-
-  return contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
 }

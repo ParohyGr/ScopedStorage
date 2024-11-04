@@ -1,12 +1,8 @@
 package com.parohy.scopedstorage.ui.save.video
 
-import android.content.ContentValues
-import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -31,11 +27,9 @@ fun SaveVideoPublicDownloads() {
     val videoUri = mutable<Uri?>(null)
 
     val onClick = {
-      val uri = activity.videoUriInsideDownloads("IMG_SS_${System.currentTimeMillis()}.jpg")
-      if (uri != null) //TODO: Handluj ak null
-        activity.captureVideoAndStoreToUri(uri) {
-          videoUri.value = it
-        }
+      activity.captureVideoAndStoreToDownloads {
+        videoUri.value = it
+      }
     }
 
     LaunchedEffect(videoUri.value) {
@@ -72,31 +66,4 @@ fun SaveVideoPublicDownloads() {
       }
     }
   }
-}
-
-private fun Context.videoUriInsideDownloads(fileName: String): Uri? {
-  val contentValues = ContentValues().apply {
-    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-    put(MediaStore.Downloads.MIME_TYPE, "video/mp4")
-//    put(MediaStore.Downloads.IS_PENDING, 1) TODO: Preskumat mozne vyuzitie
-  }
-
-  val collection: Uri =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      contentValues.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-      MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-    } else {
-      val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-
-      // POZOR! Je potrebne skontrolovat ci existuje
-      if (!dir.exists())
-        dir.mkdirs()
-
-      val filePath = dir.absolutePath + fileName
-
-      contentValues.put(MediaStore.Downloads.DATA, filePath)
-      Uri.parse(filePath)
-    }
-
-  return contentResolver.insert(collection, contentValues)
 }
