@@ -1,11 +1,6 @@
 package com.parohy.scopedstorage.ui.save.picture
 
-import android.content.ContentValues
-import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -29,11 +24,9 @@ fun SavePicturePublicDownloads() {
     val imageUri = mutable<Uri?>(null)
 
     val onClick = {
-      val uri = activity.pictureUriInsideDownloads("IMG_SS_${System.currentTimeMillis()}.jpg")
-      if (uri != null) //TODO: Handluj ak null
-        activity.capturePhotoAndStoreToUri(uri) {
-          imageUri.value = it
-        }
+      activity.capturePhotoAndStoreToDownloads {
+        imageUri.value = it
+      }
     }
 
     BackHandler(imageUri.value != null) {
@@ -52,31 +45,4 @@ fun SavePicturePublicDownloads() {
       }
     }
   }
-}
-
-private fun Context.pictureUriInsideDownloads(fileName: String): Uri? {
-  val contentValues = ContentValues().apply {
-    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-    put(MediaStore.Downloads.MIME_TYPE, "image/jpeg")
-//    put(MediaStore.Downloads.IS_PENDING, 1) TODO: Preskumat mozne vyuzitie
-  }
-
-  val collection: Uri =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      contentValues.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-      MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-    } else {
-      val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-
-      // POZOR! Je potrebne skontrolovat ci existuje
-      if (!dir.exists())
-        dir.mkdirs()
-
-      val filePath = dir.absolutePath + fileName
-
-      contentValues.put(MediaStore.Downloads.DATA, filePath)
-      Uri.parse(filePath)
-    }
-
-  return contentResolver.insert(collection, contentValues)
 }

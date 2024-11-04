@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -108,10 +109,18 @@ open class SaveActivity: ComponentActivity() {
   /*endregion*/
 
   /*region Odfotim a ulozim do Pictures*/
+  private val EXPIRE_TIME = 24 * 60 * 60 // 24 hours
+
   private fun pictureUriInsidePictures(fileName: String): Uri? {
     val contentValues = ContentValues().apply {
       put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
       put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+
+      // Tento obsah ak nebude publikovany, bude zmazany po EXPIRE_TIME
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        put(MediaStore.Images.Media.IS_PENDING, 1)
+        put(MediaStore.Images.Media.DATE_EXPIRES, System.currentTimeMillis() / 1000 + EXPIRE_TIME)
+      }
     }
 
     val collection: Uri =
@@ -125,7 +134,7 @@ open class SaveActivity: ComponentActivity() {
         if (!dir.exists())
           dir.mkdirs()
 
-        val filePath = dir.absolutePath + fileName
+        val filePath = "${dir.absolutePath}/$fileName"
 
         contentValues.put(MediaStore.Files.FileColumns.DATA, filePath)
         MediaStore.Images.Media.getContentUri("external")
@@ -134,11 +143,93 @@ open class SaveActivity: ComponentActivity() {
     return contentResolver.insert(collection, contentValues)
   }
 
+  /*
+  * Pri vytvarani suboru cez ContentResolver, nastavujem dany obsah ako nepublikovany.
+  * Ak uz som s editaciou hotovy, musim ho publikovat. Inak bude zmazany po EXPIRE_TIME
+  * */
+  private fun Uri.publishPicture() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.IS_PENDING, 0)
+      }
+      contentResolver.update(this, contentValues, null, null)
+    }
+  }
+
   fun capturePhotoAndStoreToPictures(onResult: (Uri?) -> Unit) {
     val block = {
       val uri = pictureUriInsidePictures("IMG_SS_${System.currentTimeMillis()}.jpg")
+      Log.i("SaveActivity", "capturePhotoAndStoreToPictures: $uri")
       if (uri != null) //TODO: Handluj ak null
-        capturePhoto(uri, onResult)
+        capturePhoto(uri) {
+          onResult(it)
+          it?.publishPicture()
+        }
+    }
+
+    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+      block()
+    else
+      requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+        block()
+      }
+  }
+  /*endregion*/
+
+  /*region Odfotim a ulozim do Downloads*/
+  private fun pictureUriInsideDownloads(fileName: String): Uri? {
+    val contentValues = ContentValues().apply {
+      put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+      put(MediaStore.Downloads.MIME_TYPE, "image/jpeg")
+
+      // nastavujem ako editovany. Tento obsah ak nebude publikovany, bude zmazany po EXPIRE_TIME
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        put(MediaStore.Downloads.IS_PENDING, 1)
+        put(MediaStore.Downloads.DATE_EXPIRES, System.currentTimeMillis() / 1000 + EXPIRE_TIME)
+      }
+    }
+
+    val collection: Uri =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        contentValues.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        MediaStore.Downloads.EXTERNAL_CONTENT_URI
+      } else {
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+        // POZOR! Je potrebne skontrolovat ci existuje
+        if (!dir.exists())
+          dir.mkdirs()
+
+        val filePath = "${dir.absolutePath}/$fileName"
+
+        contentValues.put(MediaStore.Downloads.DATA, filePath)
+        MediaStore.Files.getContentUri("external")
+      }
+
+    return contentResolver.insert(collection, contentValues)
+  }
+
+  /*
+* Pri vytvarani suboru cez ContentResolver, nastavujem dany obsah ako nepublikovany.
+* Ak uz som s editaciou hotovy, musim ho publikovat. Inak bude zmazany po EXPIRE_TIME
+* */
+  private fun Uri.publishDownloads() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      val contentValues = ContentValues().apply {
+        put(MediaStore.Downloads.IS_PENDING, 0)
+      }
+      contentResolver.update(this, contentValues, null, null)
+    }
+  }
+
+  fun capturePhotoAndStoreToDownloads(onResult: (Uri?) -> Unit) {
+    val block = {
+      val uri = pictureUriInsideDownloads("IMG_SS_${System.currentTimeMillis()}.jpg")
+      if (uri != null) //TODO: Handluj ak null
+        capturePhoto(uri) {
+          onResult(it)
+          it?.publishDownloads()
+        }
     }
 
     if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED)
