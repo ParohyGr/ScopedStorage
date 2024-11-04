@@ -377,13 +377,18 @@ open class LoadActivity: SaveActivity() {
         cursor.moveToFirst()
         Log.i("MediaScanner", "Found ${cursor.count} media in $collectionUri")
         do {
-          add(
-            MediaInfo(
-              uri = ContentUris.withAppendedId(collectionUri, cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))),
-              dateTaken = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)),
-              mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE))
+          try {
+            add(
+              MediaInfo(
+                uri = ContentUris.withAppendedId(collectionUri, cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))),
+                dateTaken = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)),
+                mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE))
+              )
             )
-          )
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+
         } while (cursor.moveToNext())
         cursor.close()
       }

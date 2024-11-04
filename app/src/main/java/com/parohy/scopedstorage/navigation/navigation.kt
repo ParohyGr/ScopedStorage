@@ -410,7 +410,8 @@ private fun NavController.LoadFileRouter(destination: Screen.LoadFile) =
           WhichGalleryPublic(
             goToPictures = { navigate(Screen.LoadFile.Gallery.PublicStorage.Pictures) },
             goToMultimedia = { navigate(Screen.LoadFile.Gallery.PublicStorage.Multimedia) },
-            goToCustom = { navigate(Screen.LoadFile.Gallery.PublicStorage.CustomDirectory) }
+            goToCustom = { navigate(Screen.LoadFile.Gallery.PublicStorage.CustomDirectory) },
+            goToPicker = { navigate(Screen.LoadFile.Gallery.PublicStorage.Picker) }
           )
         else ->
           WhichType(
