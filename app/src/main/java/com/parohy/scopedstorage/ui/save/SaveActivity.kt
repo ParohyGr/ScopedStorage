@@ -1,6 +1,7 @@
 package com.parohy.scopedstorage.ui.save
 
 import android.content.ContentValues
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -23,6 +24,9 @@ import androidx.core.app.ActivityCompat
 *  - moznost pristupu k suborom na vzdialenych uloziskach
 *  - persistencia read/write prav uri suboru
 * */
+
+private fun Context.isGranted(permission: String): Boolean =
+  ActivityCompat.checkSelfPermission(this, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
 open class SaveActivity: ComponentActivity() {
   /*region request permission*/
@@ -88,7 +92,7 @@ open class SaveActivity: ComponentActivity() {
 
   /*region Odfotim a ulozim na URI*/
   fun capturePhotoAndStoreToUri(uri: Uri, onResult: (Uri?) -> Unit) {
-    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    if (isGranted(android.Manifest.permission.CAMERA))
       capturePhoto(uri, onResult)
     else
       requestPermission(android.Manifest.permission.CAMERA) {
@@ -99,7 +103,7 @@ open class SaveActivity: ComponentActivity() {
 
   /*region Nakamerujema ulozim na URI*/
   fun captureVideoAndStoreToUri(uri: Uri, onResult: (Uri?) -> Unit) {
-    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    if (isGranted(android.Manifest.permission.CAMERA))
       captureVideo(uri, onResult)
     else
       requestPermission(android.Manifest.permission.CAMERA) {
@@ -109,18 +113,10 @@ open class SaveActivity: ComponentActivity() {
   /*endregion*/
 
   /*region Odfotim a ulozim do Pictures*/
-  private val EXPIRE_TIME = 24 * 60 * 60 // 24 hours
-
   private fun pictureUriInsidePictures(fileName: String): Uri? {
     val contentValues = ContentValues().apply {
       put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
       put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-
-      // Tento obsah ak nebude publikovany, bude zmazany po EXPIRE_TIME
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        put(MediaStore.Images.Media.IS_PENDING, 1)
-        put(MediaStore.Images.Media.DATE_EXPIRES, System.currentTimeMillis() / 1000 + EXPIRE_TIME)
-      }
     }
 
     val collection: Uri =
@@ -143,36 +139,28 @@ open class SaveActivity: ComponentActivity() {
     return contentResolver.insert(collection, contentValues)
   }
 
-  /*
-  * Pri vytvarani suboru cez ContentResolver, nastavujem dany obsah ako nepublikovany.
-  * Ak uz som s editaciou hotovy, musim ho publikovat. Inak bude zmazany po EXPIRE_TIME
-  * */
-  private fun Uri.publishPicture() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      val contentValues = ContentValues().apply {
-        put(MediaStore.Images.Media.IS_PENDING, 0)
-      }
-      contentResolver.update(this, contentValues, null, null)
-    }
-  }
-
   fun capturePhotoAndStoreToPictures(onResult: (Uri?) -> Unit) {
     val block = {
       val uri = pictureUriInsidePictures("IMG_SS_${System.currentTimeMillis()}.jpg")
       Log.i("SaveActivity", "capturePhotoAndStoreToPictures: $uri")
       if (uri != null) //TODO: Handluj ak null
-        capturePhoto(uri) {
-          onResult(it)
-          it?.publishPicture()
-        }
+        capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
     }
 
-    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED)
-      block()
-    else
-      requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+      if (isGranted(android.Manifest.permission.CAMERA))
         block()
-      }
+      else
+        requestPermission(android.Manifest.permission.CAMERA) {
+          block()
+        }
+    else
+      if (isGranted(android.Manifest.permission.CAMERA) && isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        block()
+      else
+        requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+          block()
+        }
   }
   /*endregion*/
 
@@ -181,12 +169,6 @@ open class SaveActivity: ComponentActivity() {
     val contentValues = ContentValues().apply {
       put(MediaStore.Downloads.DISPLAY_NAME, fileName)
       put(MediaStore.Downloads.MIME_TYPE, "image/jpeg")
-
-      // nastavujem ako editovany. Tento obsah ak nebude publikovany, bude zmazany po EXPIRE_TIME
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        put(MediaStore.Downloads.IS_PENDING, 1)
-        put(MediaStore.Downloads.DATE_EXPIRES, System.currentTimeMillis() / 1000 + EXPIRE_TIME)
-      }
     }
 
     val collection: Uri =
@@ -209,35 +191,28 @@ open class SaveActivity: ComponentActivity() {
     return contentResolver.insert(collection, contentValues)
   }
 
-  /*
-* Pri vytvarani suboru cez ContentResolver, nastavujem dany obsah ako nepublikovany.
-* Ak uz som s editaciou hotovy, musim ho publikovat. Inak bude zmazany po EXPIRE_TIME
-* */
-  private fun Uri.publishDownloads() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      val contentValues = ContentValues().apply {
-        put(MediaStore.Downloads.IS_PENDING, 0)
-      }
-      contentResolver.update(this, contentValues, null, null)
-    }
-  }
-
   fun capturePhotoAndStoreToDownloads(onResult: (Uri?) -> Unit) {
     val block = {
       val uri = pictureUriInsideDownloads("IMG_SS_${System.currentTimeMillis()}.jpg")
+      Log.i("SaveActivity", "capturePhotoAndStoreToDownloads: $uri")
       if (uri != null) //TODO: Handluj ak null
-        capturePhoto(uri) {
-          onResult(it)
-          it?.publishDownloads()
-        }
+        capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
     }
 
-    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED)
-      block()
-    else
-      requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+      if (isGranted(android.Manifest.permission.CAMERA))
         block()
-      }
+      else
+        requestPermission(android.Manifest.permission.CAMERA) {
+          block()
+        }
+    else
+      if (isGranted(android.Manifest.permission.CAMERA) && isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        block()
+      else
+        requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+          block()
+        }
   }
   /*endregion*/
 
@@ -256,7 +231,7 @@ open class SaveActivity: ComponentActivity() {
       createPictureDocument.launch("Custom_SS_${System.currentTimeMillis()}.jpg")
     }
 
-    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    if (isGranted(android.Manifest.permission.CAMERA))
       block()
     else
       requestPermission(android.Manifest.permission.CAMERA) {
@@ -280,7 +255,7 @@ open class SaveActivity: ComponentActivity() {
       createVideoDocument.launch("Custom_SS_${System.currentTimeMillis()}.mp4")
     }
 
-    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    if (isGranted(android.Manifest.permission.CAMERA))
       block()
     else
       requestPermission(android.Manifest.permission.CAMERA) {
