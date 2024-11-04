@@ -17,14 +17,18 @@ import com.parohy.scopedstorage.ui.load.LoadActivity
 import kotlinx.coroutines.sync.Mutex
 import kotlin.math.sqrt
 
+/*
+* Pre otvorenie obrazku z Downloads pouzijeme Storage Access Framework (SAF).
+* SAF ma v sebe uz podporu pre ScopedStorage, takze nemusime riesit ziadne permissions.
+* */
 @Composable
-fun LoadDocumentFromPublicDocuments() {
+fun LoadDocumentFromPublicDownloads() {
   val activity = LocalContext.current as LoadActivity
-  EndScreen(title = "Nacitaj dokument z Documents") {
+  EndScreen(title = "Nacitaj dokument z Downloads") {
     val documentUri = mutable<Uri?>(null)
 
     val onClick = {
-      activity.openDocumentSAF { uri ->
+      activity.openDocumentDownloadsSAF { uri ->
         documentUri.value = uri
       }
     }

@@ -101,6 +101,28 @@ object OpenPdfDocumentFromDocuments: ActivityResultContract<Unit, Uri?>() {
 }
 /*endregion*/
 
+/*region SAF Screen.LoadFile.Picture.PublicStorage.Pictures*/
+object OpenDocumentFromDownloads: ActivityResultContract<Unit, Uri?>() {
+  override fun createIntent(context: Context, input: Unit) =
+    Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+      addCategory(Intent.CATEGORY_OPENABLE)
+      type = "application/pdf"
+      /*
+      * Z mojho testovania, na novsich verziach Androidu, sa neotvoria Pictures ale posledne otvorena lokalita
+      * Neviem preco to tak funguje, ale je to volovina. Vid dokumentacia DocumentsContract.EXTRA_INITIAL_URI co to na robit.
+      * */
+      val startFrom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        MediaStore.Downloads.EXTERNAL_CONTENT_URI
+      else
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toUri()
+
+      putExtra(DocumentsContract.EXTRA_INITIAL_URI, startFrom)
+    }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
+}
+/*endregion*/
+
 open class LoadActivity: SaveActivity() {
   private var _onFileResult: ((Uri?) -> Unit)? = null
 
@@ -128,7 +150,7 @@ open class LoadActivity: SaveActivity() {
   }
   /*endregion*/
 
-  /*region Screen.LoadFile.Picture.PublicStorage.Pictures*/
+  /*region Screen.LoadFile.Picture.PublicStorage.Downloads*/
   private val openPictureDownloadsContract = registerForActivityResult(OpenImageFromDownloads) { uri: Uri? ->
     _onFileResult?.invoke(uri)
     _onFileResult = null
@@ -163,6 +185,19 @@ open class LoadActivity: SaveActivity() {
     openDocumentContract.launch(Unit)
   }
   /*endregion*/
+
+  /*region Screen.LoadFile.Document.PublicStorage.Downloads*/
+  private val openDocumentDownloadsContract = registerForActivityResult(OpenDocumentFromDownloads) { uri: Uri? ->
+    _onFileResult?.invoke(uri)
+    _onFileResult = null
+  }
+
+  fun openDocumentDownloadsSAF(onResult: (Uri?) -> Unit) {
+    _onFileResult = onResult
+    openDocumentDownloadsContract.launch(Unit)
+  }
+  /*endregion*/
+
 
   /*region Screen.LoadFile.Gallery.PublicStorage.Pictures*/
   /*Tako query nacita vsetky obrazky z telefonu, nie len z Pictures*/

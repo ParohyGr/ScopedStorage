@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import com.parohy.scopedstorage.ui.save.document.createPdfFile
 
 /*Kedy pouzit MediaStore a kedy SAF
 * MediaStore
@@ -82,13 +83,6 @@ open class SaveActivity: ComponentActivity() {
   /*endregion*/
 
   private var _onFileCreated: ((Uri?) -> Unit)? = null
-
-  /*
-  * Na vytvaranie suborov na konkretnych miestach pouzivame SAF. Tento uz ma integrovany Scoped Storage
-  * To znamena, ze nepotrebujeme WRITE_EXTERNAL_STORAGE permission
-  * */
-
-  /*Preco ma kazdy typ vlastny CreateDocument? Pozri si @Deprecated koment pre triedu CreateDocument...*/
 
   /*region Odfotim a ulozim na URI*/
   fun capturePhotoAndStoreToUri(uri: Uri, onResult: (Uri?) -> Unit) {
@@ -210,6 +204,7 @@ open class SaveActivity: ComponentActivity() {
   /*endregion*/
 
   /*region Odfotim a ulozim podla vyberu*/
+  /*Preco ma kazdy typ vlastny CreateDocument? Pozri si @Deprecated koment pre triedu CreateDocument...*/
   private val createPictureDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("image/jpeg")) { uri: Uri? ->
     _onFileCreated?.invoke(uri)
     _onFileCreated = null
@@ -221,6 +216,10 @@ open class SaveActivity: ComponentActivity() {
         if (uri != null) // TODO: Handluj ak sa nepodari vytvorit
           capturePhoto(uri, onResult)
       }
+      /*
+      * Na vytvaranie suborov na konkretnych miestach pouzivame SAF. Tento uz ma integrovany Scoped Storage
+      * To znamena, ze nepotrebujeme WRITE_EXTERNAL_STORAGE permission
+      * */
       createPictureDocument.launch("Custom_SS_${System.currentTimeMillis()}.jpg")
     }
 
@@ -331,6 +330,7 @@ open class SaveActivity: ComponentActivity() {
   /*endregion*/
 
   /*region Nakamerujem a ulozim podla vybery*/
+  /*Preco ma kazdy typ vlastny CreateDocument? Pozri si @Deprecated koment pre triedu CreateDocument...*/
   private val createVideoDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("video/mp4")) { uri: Uri? ->
     _onFileCreated?.invoke(uri)
     _onFileCreated = null
@@ -342,6 +342,10 @@ open class SaveActivity: ComponentActivity() {
         if (uri != null) // TODO: Handluj ak sa nepodari vytvorit
           captureVideo(uri, onResult)
       }
+      /*
+      * Na vytvaranie suborov na konkretnych miestach pouzivame SAF. Tento uz ma integrovany Scoped Storage
+      * To znamena, ze nepotrebujeme WRITE_EXTERNAL_STORAGE permission
+      * */
       createVideoDocument.launch("Custom_SS_${System.currentTimeMillis()}.mp4")
     }
 
@@ -354,15 +358,120 @@ open class SaveActivity: ComponentActivity() {
   }
   /*endregion*/
 
-  /*region Vytvor dokument*/
+  /*region Vytvor dokument v Documents + Downloads*/
+  private fun Context.documentUriInsideDocuments(fileName: String): Uri? {
+    val contentValues = ContentValues().apply {
+      put(MediaStore.Files.FileColumns.DISPLAY_NAME, fileName)
+      put(MediaStore.Files.FileColumns.MIME_TYPE, "application/pdf")
+    }
+
+    val collection: Uri =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        contentValues.put(MediaStore.Files.FileColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
+        MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+      } else {
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+
+        // POZOR! Je potrebne skontrolovat ci existuje
+        if (!dir.exists())
+          dir.mkdirs()
+
+        val filePath = "${dir.absolutePath}/$fileName"
+
+        contentValues.put(MediaStore.Files.FileColumns.DATA, filePath)
+        MediaStore.Files.getContentUri("external")
+      }
+
+    return contentResolver.insert(collection, contentValues)
+  }
+
+  private fun Context.documentUriInsideDownloads(fileName: String): Uri? {
+    val contentValues = ContentValues().apply {
+      put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+      put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+    }
+
+    val collection: Uri =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        contentValues.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+      } else {
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+        // POZOR! Je potrebne skontrolovat ci existuje
+        if (!dir.exists())
+          dir.mkdirs()
+
+        val filePath = "${dir.absolutePath}/$fileName"
+
+        contentValues.put(MediaStore.Downloads.DATA, filePath)
+        MediaStore.Files.getContentUri("external")
+      }
+
+    return contentResolver.insert(collection, contentValues)
+  }
+
+  fun createDocumentInDocuments(onResult: (Uri?) -> Unit) {
+    val block = {
+      val uri = documentUriInsideDocuments("DOC_SS_${System.currentTimeMillis()}.pdf")
+      Log.i("SaveActivity", "createDocumentInDocuments: $uri")
+      if (uri != null) { //TODO: Handluj ak null
+        createPdfFile(uri)
+        onResult(uri)
+      }
+    }
+
+    /*Pre Android 10+ nie je potrebne pytat si WRITE_EXTERNAL_STORAGE ak chcem zapisovat do Documents*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+      block()
+    else
+      if (isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        block()
+      else
+        requestPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+          block()
+        }
+  }
+
+  fun createDocumentInDownloads(onResult: (Uri?) -> Unit) {
+    val block = {
+      val uri = documentUriInsideDownloads("DOC_SS_${System.currentTimeMillis()}.pdf")
+      Log.i("SaveActivity", "createDocumentInDownloads: $uri")
+      if (uri != null) { //TODO: Handluj ak null
+        createPdfFile(uri)
+        onResult(uri)
+      }
+    }
+
+    /*Pre Android 10+ nie je potrebne pytat si WRITE_EXTERNAL_STORAGE ak chcem zapisovat do Downloads*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+      block()
+    else
+      if (isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        block()
+      else
+        requestPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+          block()
+        }
+  }
+  /*endregion*/
 
   /*region Vytvorim PDF dokument a ulozim podla vyberu*/
+  /*Preco ma kazdy typ vlastny CreateDocument? Pozri si @Deprecated koment pre triedu CreateDocument...*/
   private val createPdfDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri: Uri? ->
     _onFileCreated?.invoke(uri)
     _onFileCreated = null
   }
   fun createDocument(onResult: (Uri?) -> Unit) {
-    _onFileCreated = onResult
+    _onFileCreated = {
+      if (it != null) // TODO: Handluj ak null
+        createPdfFile(it)
+      onResult(it)
+    }
+    /*
+    * Na vytvaranie suborov na konkretnych miestach pouzivame SAF. Tento uz ma integrovany Scoped Storage
+    * To znamena, ze nepotrebujeme WRITE_EXTERNAL_STORAGE permission
+    * */
     createPdfDocument.launch("Custom_SS_${System.currentTimeMillis()}.pdf")
   }
   /*endregion*/

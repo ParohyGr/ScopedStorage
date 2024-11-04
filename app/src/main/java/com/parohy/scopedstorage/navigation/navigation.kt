@@ -85,6 +85,8 @@ sealed interface Screen: Parcelable {
         @Parcelize
         data object Documents: PublicStorage()
         @Parcelize
+        data object Downloads: PublicStorage()
+        @Parcelize
         data object CustomDirectory: PublicStorage()
       }
     }
@@ -101,6 +103,8 @@ sealed interface Screen: Parcelable {
         data object Multimedia: PublicStorage()
         @Parcelize
         data object CustomDirectory: PublicStorage()
+        @Parcelize
+        data object Picker: PublicStorage()
       }
     }
     /*endregion*/
@@ -326,7 +330,7 @@ private fun NavController.LoadFileRouter(destination: Screen.LoadFile) =
       when (destination) {
         is Screen.LoadFile.Picture.PrivateStorage -> LoadPicturePrivate()
         is Screen.LoadFile.Picture.PublicStorage.Pictures -> LoadFromPublicPictures()
-        is Screen.LoadFile.Picture.PublicStorage.Downloads -> LoadFromPublicDownloads()
+        is Screen.LoadFile.Picture.PublicStorage.Downloads -> LoadPictureFromPublicDownloads()
         is Screen.LoadFile.Picture.PublicStorage.CustomDirectory -> LoadPicturePublicCustom()
         is Screen.LoadFile.Picture.PublicStorage ->
           WhichPicturePublic(
@@ -379,12 +383,13 @@ private fun NavController.LoadFileRouter(destination: Screen.LoadFile) =
     is Screen.LoadFile.Document ->
       when (destination) {
         is Screen.LoadFile.Document.PrivateStorage -> LoadDocumentPrivate()
-        is Screen.LoadFile.Document.PublicStorage.Documents -> LoadFromPublicDocuments()
+        is Screen.LoadFile.Document.PublicStorage.Documents -> LoadDocumentFromPublicDocuments()
+        is Screen.LoadFile.Document.PublicStorage.Downloads -> LoadDocumentFromPublicDownloads()
         is Screen.LoadFile.Document.PublicStorage.CustomDirectory -> LoadDocumentFromPublicCustom()
         is Screen.LoadFile.Document.PublicStorage ->
           WhichDocumentPublic(
             goToDocuments = { navigate(Screen.LoadFile.Document.PublicStorage.Documents) },
-            goToDownloads = { /*navigate(Screen.LoadFile.Document.PublicStorage.Downloads) */},
+            goToDownloads = { navigate(Screen.LoadFile.Document.PublicStorage.Downloads) },
             goToCustom = { navigate(Screen.LoadFile.Document.PublicStorage.CustomDirectory) },
           )
         else ->
@@ -400,6 +405,7 @@ private fun NavController.LoadFileRouter(destination: Screen.LoadFile) =
         is Screen.LoadFile.Gallery.PublicStorage.Pictures -> LoadGalleryFromPublicPictures()
         is Screen.LoadFile.Gallery.PublicStorage.Multimedia -> LoadGalleryFromMultimediaPublic()
         is Screen.LoadFile.Gallery.PublicStorage.CustomDirectory -> LoadGalleryFromCustomPublic()
+        is Screen.LoadFile.Gallery.PublicStorage.Picker -> LoadGalleryFromPickerPublic()
         is Screen.LoadFile.Gallery.PublicStorage ->
           WhichGalleryPublic(
             goToPictures = { navigate(Screen.LoadFile.Gallery.PublicStorage.Pictures) },

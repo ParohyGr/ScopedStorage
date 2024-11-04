@@ -22,7 +22,7 @@ import com.parohy.scopedstorage.ui.load.LoadActivity
 * SAF ma v sebe uz podporu pre ScopedStorage, takze nemusime riesit ziadne permissions.
 * */
 @Composable
-fun LoadFromPublicDownloads() {
+fun LoadPictureFromPublicDownloads() {
   EndScreen(title = "Vyber obrazok z Downloads") {
     val activity = LocalContext.current as LoadActivity
     val imageUri = mutable<Uri?>(null)

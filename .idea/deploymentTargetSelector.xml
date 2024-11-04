@@ -3,11 +3,11 @@
   <component name="deploymentTargetSelector">
     <selectionStates>
       <SelectionState runConfigName="app">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-11-04T12:41:05.434799Z">
+        <option name="selectionMode" value="DIALOG" />
+        <DropdownSelection timestamp="2024-11-04T12:54:02.075752Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_34.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_30.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -16,6 +16,26 @@
             <Target type="DEFAULT_BOOT">
               <handle>
                 <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_30.avd" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_34.avd" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_33.avd" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_28.avd" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_29.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
