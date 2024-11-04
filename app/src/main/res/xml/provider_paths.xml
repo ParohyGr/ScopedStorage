@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--cacheDir-->
+    <cache-path name="app-cache" path="." />
+
+    <!--filesDir-->
+    <files-path name="app-files" path="." />
+
+    <!--getExternalFilesDir-->
+    <external-files-path name="files" path="." />
+
+    <!--externalCacheDir-->
+    <external-cache-path name="external_cache" path="." />
+</paths>
