@@ -3,11 +3,11 @@
   <component name="deploymentTargetSelector">
     <selectionStates>
       <SelectionState runConfigName="app">
-        <option name="selectionMode" value="DIALOG" />
-        <DropdownSelection timestamp="2024-11-04T12:54:02.075752Z">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2024-11-07T13:17:18.124357Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_30.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/parohy/.android/avd/ScopedStorage_33.avd" />
             </handle>
           </Target>
         </DropdownSelection>
