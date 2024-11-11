@@ -20,7 +20,6 @@ import com.parohy.scopedstorage.ui.save.document.createPdfFile
 *  - automaticke skenovanie medii
 * SAF
 *  - vhodne na pracu so subormi, ktore neukladame na vseobecne miesta
-*  - integorvany ScopedStorage - pri pouziti TREBA riesit WRITE_EXTERNAL_STORAGE
 *  - kompatabilita so starsou verziou Androidu
 *  - moznost pristupu k suborom na vzdialenych uloziskach
 *  - persistencia read/write prav uri suboru

@@ -45,7 +45,7 @@ object OpenImageFromPictures: ActivityResultContract<Unit, Uri?>() {
 }
 /*endregion*/
 
-/*region SAF Screen.LoadFile.Picture.PublicStorage.Pictures*/
+/*region SAF Screen.LoadFile.Picture.PublicStorage.Downloads*/
 object OpenImageFromDownloads: ActivityResultContract<Unit, Uri?>() {
   override fun createIntent(context: Context, input: Unit) =
     Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -101,7 +101,7 @@ object OpenPdfDocumentFromDocuments: ActivityResultContract<Unit, Uri?>() {
 }
 /*endregion*/
 
-/*region SAF Screen.LoadFile.Picture.PublicStorage.Pictures*/
+/*region SAF Screen.LoadFile.Document.PublicStorage.Downloads**/
 object OpenDocumentFromDownloads: ActivityResultContract<Unit, Uri?>() {
   override fun createIntent(context: Context, input: Unit) =
     Intent(Intent.ACTION_OPEN_DOCUMENT).apply {

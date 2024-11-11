@@ -27,13 +27,108 @@ Ak to chcem zdielat cez `FileProvider`, potrebujeme mu zadefinovat pristupy:
 Ak si vypiseme taketo `Uri` do konzoly, dostaneme nieco take:
 `content://com.parohy.scopedstorage.fileprovider/obrazocky/obrazok.jpg`
 
+
 ## Verejne ulozisko
+Pri verejnom ulozisku Google postupne utahoval opasok ohladne bezpecnosti. Kazdou novsou verziou Androidu pocnuc Android 10 sa zmenili prava k verejnemu ulozisku.
+
+### Nacitavanie
+Pre vsetky verzie Androidu je mozne nacitat subor a pracovat s nim aj bez ziadania prav na citanie. Toto plati len v pripade, ze pouzijete SAF (Storage Access Framework).
+SAF, ako aj v [SAF docs](https://developer.android.com/guide/topics/providers/document-provider), pise uz obsahuje v sebe nadstsavku ba ScopedStorage. Cize ak pouzijete Intent na vybrenie suboru pomocou `Intent.ACTION_OPEN_DOCUMENT`, tak sa to povazuje, ze user manualne suhlasil so zdielanim konrektneho subora.
+
+Subory je mozne nacitat aj pomocou `ContentResolver` ([docs](https://developer.android.com/guide/topics/providers/content-provider-basics#ClientProvider)). Tu uz je potrebne si pytat prava na citanie. Jednotlive pravomoci a metody sa odlisuju podla verzie Androidu.
+Tak isto je dolezite pracovat s `MediaStore` ([co to je](#MediaStore)). `ContentResolver` pomocou query nacita pozadovane subory z verejneho uloziska.
+
+### MediaStore
+[docs](https://developer.android.com/training/data-storage/shared/media)
+Ulozisko Androidu si predstavte ako SQL databazu. Kazdy subor je zaznam v tabulke. Tato tabulka obsahuje rozne stlpce, ktore reprezentuju informacie o subore. Napriklad `MediaStore.Images.Media.DISPLAY_NAME` reprezentuje meno suboru.
+Kazda verzia Androidu ma definovane nazvy tychto stlpcov inac, preto je potrebne pouzivat tieto konstanty. Tieto konstanty su odlisne aj podla `mimeType` alebo skor o aky typ media mam zaujem. Zaroven, `MediaStore` uz obsahuje nadstavbu ScopedStorage,
+cize ak pouzijem `MediaStore`, uz sa riadim podla opravnenych postupov Androidu.
+**Prava na citanie si ziadat vobec nemusim, ak chcem pristupovat len k suborom, ktore vlastnim. V preklade to znamena: sobory, ktore som vytvoril v tejto aplikacii.**
+
+### Ukladanie
+Ak chceme od uzivatela, aby si zvolil miesto ulozenia, pouzijeme opat [SAF](https://developer.android.com/guide/topics/providers/document-provider). Takto vytvoreny subor uz ma udele prava na zapis, cize nemusime absolutne riesit zaidne prava.
+
+Ak chceme ukladat subor na konkretne miesto, napriklad ak by sme cheli ulozit obrazok do `Pictures` pouzijeme na to `ContentResolver` s `MediaStore` ([co to je](#MediaStore)).
+Preco by som mal pouzivat `ContentResolver` s `MediaStore`:
+**MediaStore**
+  - praca s media subormi: Obrazky, Video, Audio a Dokumenty
+  - integorvany ScopedStorage - Android 13+ **NETREBA** riesit `WRITE_EXTERNAL_STORAGE`
+  - kompatabilita so starsou verziou Androidu
+  - **automaticke skenovanie medii**
+**SAF**
+  - vhodne na pracu so subormi, ktore neukladame na vseobecne miesta
+  - kompatabilita so starsou verziou Androidu
+  - moznost pristupu k suborom na vzdialenych uloziskach
+  - persistencia read/write prav uri suboru
+
+Subor si vytvorime pomocou `ContentResolver.insert`, ktore nam vrati Uri na novy subor. Do tohto Uri mozme priamo vpisovat data.
+
 ### Android 9 a nizsie
+**Nacitavanie**
+Ak pouzijem `ContentResolver`, je potrebne si poziadat o `READ_EXTERNAL_STORAGE`.
+**Ukladanie**
+Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
+
 ### Android 10-12
+**Nacitavanie**
+Ak pouzijem `ContentResolver`, je potrebne si poziadat o `READ_EXTERNAL_STORAGE`.
+
+**Ukladanie**
+Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
+
 ### Android 13 a vyssie
+**Nacitavanie**
+Ak pouzijem `ContentResolver`, jre potrebne si ziadat `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` alebo `READ_MEDIA_AUDIO`.
+Tu uz si vyberiete, aky obsah chcete nacitat:
+* Ak chcete nacitat obrazky, pouzijete `READ_MEDIA_IMAGES`
+* Ak chcete nacitat videa, pouzijete `READ_MEDIA_VIDEO`
+* Ak chcete nacitat audio, pouzijete `READ_MEDIA_AUDIO`
+
+Ak sucasne viac druhou medii, tak kombinacia ich, cize `requestMultiplePermissions`. Tento permission je specialny tym, ze user moze konrektne zvolit iba jednotlive konkretne polozky, ktore chce povolit. 
+V takomto pripade sa udeluje permission `READ_MEDIA_VISUAL_USER_SELECTED` co reprezentuje ciastocne permission. Ak je tato permission platna, treba udelit moznost uzivatelovu pridat dalsie media. Napriklad
+tlacidlo, ktore poziada o permission. Samozrejme obrazovka alebo funkcionalita, by nemala byt blokovana, cize na pozadi by user mal vediet pracovat uz so subormi, ktore uz manualne povolil.
 ![Diagram](ss_permissions_diagram.png)
 
-## Rozdelenie podla typu mimeType
+**V praxi takyto permission moze vyzerat nasledovne:**
+```kotlin
+    // requestMultiplePermissions je custom funkcia, ktora spusta ActivityResultContracts.RequestMultiplePermissions a v pripade PERMISSION_GRANTED spusti lambdu
+    // Pre Android 13+ je potrebne READ_MEDIA_IMAGES a READ_MEDIA_VIDEO ak chcem nacitat obrazky aj videa, ktore som nevytvoril z tejto aplikacie
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+      if (checkSelfPermission(android.Manifest.permission.READ_MEDIA_IMAGES) == android.content.pm.PackageManager.PERMISSION_GRANTED || checkSelfPermission(android.Manifest.permission.READ_MEDIA_VIDEO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        /*User udelil uplny pristup ku fotkam a videam. Staci, ak povoli len jedno z nich "Allow all" a ma automaticky full pristup aj k druhemu. Preto je v podmienke OR*/
+        ...rob daco s obrazkami a videami...
+      } else if (checkSelfPermission(android.Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        /*User udelil ciastocny pristup, to znamena, ze manualne volil media, ktore dovoluje zdielat s aplikaciou. Malo by to byt non-blocking,
+        * cize odoslem vysledok ale popytam si opat pristup. Dodatocne pytanie si pristupu by malo byt UI/UX oddelene od hlavnej akcie, napriklad extra tlacidlo,
+        * ktore by vyvolal systemovy permission na READ_MEDIA_IMAGES a READ_MEDIA_VIDEO*/
+        ...rob daco s obrazkami a videami...
+        /*!!POZOR!! -> Tento call by mal byt volany dodatocne cez ine tlacidlo akciu, nie hlavnu. Ale toto je len example, ale takto to nekopiruj!*/
+        requestMultiplePermissions(android.Manifest.permission.READ_MEDIA_IMAGES, android.Manifest.permission.READ_MEDIA_VIDEO) {
+          ...rob daco s obrazkami a videami...
+        }
+      }
+      else // Ak este nemam pristup, tak si ho poprosim
+        requestMultiplePermissions(android.Manifest.permission.READ_MEDIA_IMAGES, android.Manifest.permission.READ_MEDIA_VIDEO) {
+          ...rob daco s obrazkami a videami...
+        }
+    // Pre Android 12 a nizsie staci READ_EXTERNAL_STORAGE
+    else
+      if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+        ...rob daco s obrazkami a videami...
+      else
+        requestPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) {
+          ...rob daco s obrazkami a videami...
+        }
+```
+
+**Image picker**
+_TODO - popisem ked to preskumam. Podla mojich vedomosti, malo by to riesit permissions za nas_
+
+**Ukladanie**
+Ak chceme ukladat subor do verejneho uloziska, je potrebne si poziadat o `WRITE_EXTERNAL_STORAGE`.
+Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
+
+# Rozdelenie podla typu mimeType
 
 ### Audio sobory
 <sub>**Poznamka:** TODO</sub>
