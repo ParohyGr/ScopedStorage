@@ -45,39 +45,14 @@ Kazda verzia Androidu ma definovane nazvy tychto stlpcov inac, preto je potrebne
 cize ak pouzijem `MediaStore`, uz sa riadim podla opravnenych postupov Androidu.
 **Prava na citanie si ziadat vobec nemusim, ak chcem pristupovat len k suborom, ktore vlastnim. V preklade to znamena: sobory, ktore som vytvoril v tejto aplikacii.**
 
-### Ukladanie
-Ak chceme od uzivatela, aby si zvolil miesto ulozenia, pouzijeme opat [SAF](https://developer.android.com/guide/topics/providers/document-provider). Takto vytvoreny subor uz ma udele prava na zapis, cize nemusime absolutne riesit zaidne prava.
-
-Ak chceme ukladat subor na konkretne miesto, napriklad ak by sme cheli ulozit obrazok do `Pictures` pouzijeme na to `ContentResolver` s `MediaStore` ([co to je](#MediaStore)).
-Preco by som mal pouzivat `ContentResolver` s `MediaStore`:
-**MediaStore**
-  - praca s media subormi: Obrazky, Video, Audio a Dokumenty
-  - integorvany ScopedStorage - Android 13+ **NETREBA** riesit `WRITE_EXTERNAL_STORAGE`
-  - kompatabilita so starsou verziou Androidu
-  - **automaticke skenovanie medii**
-**SAF**
-  - vhodne na pracu so subormi, ktore neukladame na vseobecne miesta
-  - kompatabilita so starsou verziou Androidu
-  - moznost pristupu k suborom na vzdialenych uloziskach
-  - persistencia read/write prav uri suboru
-
-Subor si vytvorime pomocou `ContentResolver.insert`, ktore nam vrati Uri na novy subor. Do tohto Uri mozme priamo vpisovat data.
-
 ### Android 9 a nizsie
-**Nacitavanie**
 Ak pouzijem `ContentResolver`, je potrebne si poziadat o `READ_EXTERNAL_STORAGE`.
-**Ukladanie**
-Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
 
 ### Android 10-12
-**Nacitavanie**
 Ak pouzijem `ContentResolver`, je potrebne si poziadat o `READ_EXTERNAL_STORAGE`.
 
-**Ukladanie**
-Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
 
 ### Android 13 a vyssie
-**Nacitavanie**
 Ak pouzijem `ContentResolver`, jre potrebne si ziadat `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` alebo `READ_MEDIA_AUDIO`.
 Tu uz si vyberiete, aky obsah chcete nacitat:
 * Ak chcete nacitat obrazky, pouzijete `READ_MEDIA_IMAGES`
@@ -123,10 +98,6 @@ tlacidlo, ktore poziada o permission. Samozrejme obrazovka alebo funkcionalita, 
 
 **Image picker**
 _TODO - popisem ked to preskumam. Podla mojich vedomosti, malo by to riesit permissions za nas_
-
-**Ukladanie**
-Ak chceme ukladat subor do verejneho uloziska, je potrebne si poziadat o `WRITE_EXTERNAL_STORAGE`.
-Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
 
 # Rozdelenie podla typu mimeType
 
