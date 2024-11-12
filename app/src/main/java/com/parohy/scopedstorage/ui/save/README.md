@@ -37,7 +37,7 @@ Preco by som mal pouzivat `ContentResolver` s `MediaStore`:
 - integorvany ScopedStorage - Android 13+ **NETREBA** riesit `WRITE_EXTERNAL_STORAGE`
 - kompatabilita so starsou verziou Androidu
 - **automaticke skenovanie medii**
-  **SAF**
+**SAF**
 - vhodne na pracu so subormi, ktore neukladame na vseobecne miesta
 - kompatabilita so starsou verziou Androidu
 - moznost pristupu k suborom na vzdialenych uloziskach
