@@ -53,7 +53,7 @@ cize ak pouzijem `MediaStore`, uz sa riadim podla opravnenych postupov Androidu.
 
 ### Android 9 a nizsie
 Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
-Ak chces ukladat do priecinka **DOWNLOADS** alebo **DOCUMENTS**, musis si pytat `WRITE_EXTERNAL_STORAGE` len pre Android 9 a nizsie
+Ak chces ukladat do verejneho uloziska, musis si pytat `WRITE_EXTERNAL_STORAGE` len pre Android 9 a nizsie
 ```kotlin
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
   block()
@@ -68,22 +68,9 @@ else
 
 ### Android 10-12
 Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
-Tu sa to trosku komplikuje ak to pride na `WRITE_EXTERNAL_STORAGE`.
 
 ### Android 13 a vyssie
 Pouzijeme `ContentResolver` s `MediaStore`. Specificky use case najdes v jednotlivych dokumnentaciach podla typu suboru.
-Ak chces ukladat do **media** priecinkov, musis si pytat `WRITE_EXTERNAL_STORAGE` len pre Android 12 a nizsie
-```kotlin
-if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-  block()
-else
-  if (isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-    block()
-  else
-    requestPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
-      block()
-    }
-```
 
 # Rozdelenie podla typu mimeType
 

@@ -140,8 +140,8 @@ open class SaveActivity: ComponentActivity() {
         capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
     }
 
-    /*Pre Android 13+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+    /*Pre Android 10+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
       if (isGranted(android.Manifest.permission.CAMERA))
         block()
       else
@@ -266,8 +266,8 @@ open class SaveActivity: ComponentActivity() {
         captureVideo(uri, onResult) //TODO: Handluj ak sa nepodari nakamerovat/cancelne nakamerovanie
     }
 
-    /*Pre Android 13+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+    /*Pre Android 10+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
       if (isGranted(android.Manifest.permission.CAMERA))
         block()
       else
