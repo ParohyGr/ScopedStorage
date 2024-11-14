@@ -16,11 +16,11 @@
     <!--Lebo pouzivam nahravac zvuku-->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!--TODO-->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!--Ked chcem ukladat MediaStore pre Android 9 a nizsie-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
-    <!--Ked chcem nacitat MediaStore pre Android 12 a nizsie-->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!--Ked chcem nacitat MediaStore pre Android 9 a nizsie-->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <!--Ked chcem nacitat MediaStore pre Android 13 a vyssie-->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

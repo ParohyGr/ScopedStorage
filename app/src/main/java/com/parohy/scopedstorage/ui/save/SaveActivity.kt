@@ -395,6 +395,7 @@ open class SaveActivity: ComponentActivity() {
         contentValues.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
       } else {
+        Environment.getExternalStorageDirectory()
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
         // POZOR! Je potrebne skontrolovat ci existuje
