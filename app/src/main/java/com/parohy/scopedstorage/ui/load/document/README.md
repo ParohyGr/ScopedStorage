@@ -106,3 +106,21 @@ fun openFileSAF(onResult: (Uri?) -> Unit) {
   openFile.launch(arrayOf("application/pdf"))
 }
 ```
+
+### Viacero suborov
+[app/src/java/com/parohy/scopedstorage/ui/load/document/multiple.kt](./multiple.kt)
+Pre nacitanie viacerych dokumentov pouzijeme `ActivityResultContracts.OpenMultipleDocuments`. Pod kapotou to podstate nastavuje `Intent.EXTRA_ALLOW_MULTIPLE`.
+Ak by si potreboval implentovat vlastny picker, `Intent.EXTRA_ALLOW_MULTIPLE` spolupracuje s `Intent.ACTION_OPEN_DOCUMENT` a `Intent.ACTION_GET_CONTENT`.
+Niektore systemove file managery _(alebo ak zariadenie pouziva nejaku specialnu appku)_ mozu ignorovat `Intent.EXTRA_ALLOW_MULTIPLE`. 
+```kotlin
+private var _onMultipleFileResult: ((List<Uri>) -> Unit)? = null
+  private val openMultipleDocuments = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris: List<Uri> ->
+    _onMultipleFileResult?.invoke(uris)
+    _onMultipleFileResult = null
+  }
+
+  fun openMultipleDocumentsSAF(onResult: (List<Uri>) -> Unit) {
+    _onMultipleFileResult = onResult
+    openMultipleDocuments.launch(arrayOf("application/pdf"))
+  }
+```

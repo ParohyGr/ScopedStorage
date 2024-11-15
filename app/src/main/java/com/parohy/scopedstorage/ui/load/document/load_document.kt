@@ -5,7 +5,7 @@ import com.parohy.scopedstorage.ui.ButtonsScreen
 import com.parohy.scopedstorage.ui.SSButton
 
 @Composable
-fun WhichDocumentPublic(
+fun WhichDocumentPublicSave(
   goToDocuments: () -> Unit,
   goToDownloads: () -> Unit,
   goToCustom: () -> Unit
@@ -14,5 +14,20 @@ fun WhichDocumentPublic(
     SSButton(text = "Documents", onClick = goToDocuments)
     SSButton(text = "Downloads", onClick = goToDownloads)
     SSButton(text = "Custom", onClick = goToCustom)
+  }
+}
+
+@Composable
+fun WhichDocumentPublicLoad(
+  goToDocuments: () -> Unit,
+  goToDownloads: () -> Unit,
+  goToCustom: () -> Unit,
+  goToCustomMultiple: () -> Unit
+) {
+  ButtonsScreen(title = "Dokumenty alebo chcem si vybrat") {
+    SSButton(text = "Documents", onClick = goToDocuments)
+    SSButton(text = "Downloads", onClick = goToDownloads)
+    SSButton(text = "Custom", onClick = goToCustom)
+    SSButton(text = "Custom viacero naraz", onClick = goToCustomMultiple)
   }
 }

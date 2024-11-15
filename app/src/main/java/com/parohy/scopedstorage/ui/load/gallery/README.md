@@ -234,5 +234,58 @@ private fun queryCustomMedia(documentTreeUri: Uri): List<MediaInfo> =
 
 ### Image picker
 [app/src/java/com/parohy/scopedstorage/ui/load/gallery/picker.kt](./picker.kt)
+Picker sluzi na vyberanie obrazkov a videi. Nesluzi na vyberanie ineho typu `mimeType`.
+Picker uz obsahuje boilerplate kod na vyberanie obrazkov a video z pamate telefonu. Pracuje to s `MediaStore`[docs](https://developer.android.com/training/data-storage/shared/media) cize nemusime riesit ani Permissions.
+Vdaka `MediaStore`, sa prava na citanie udeluju automaticky pre vybrane Uri. Funguje to na rovnakom principe ako SAF. Tieto prava nie su persistujuce, cize po restartovani telefonu sa tieto prava stratia.
+Ak pracujes s touto Uri persistujuco, je potrebne manualne nastavit pretrvavajuce prava:
 ```kotlin
-_TODO: Este to nemam_
+val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+context.contentResolver.takePersistableUriPermission(uri, flag)
+```
+
+**Picker pre jeden obrazok/video**
+```kotlin
+private val pickSingleImageOrVideo = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
+    _onFileResult?.invoke(it)
+    _onFileResult = null
+  }
+
+  fun pickSingleImageOrVideo(onResult: (Uri?) -> Unit) {
+    _onFileResult = {
+      if (it != null)
+        MediaInfo(it, Date().toString(), contentResolver.getType(it) ?: "").let(::createVideoThumbnail).uri.let(onResult)
+    }
+    pickSingleImageOrVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+  }
+```
+
+**Picker pre viacero obrazkov/videii**
+_Discalimer: Pre Android 9 a nizsie, pre niektore znacky telefonov, tento `PickMultipleVisualMedia` vyberie len jedno Uri. 
+Ak tento picker je breaking pre tvoj use case, treba si implentovat vlastny picker alebo pouzit externu kniznicu.
+...alebo este ostava moznost pouzit ActivityResultContracts.OpenMultipleDocuments [priklad](../document/README.md#viacero-suborov) s `mimeType` podla potreby._
+```kotlin
+private var _onMultipleFileResult: ((List<Uri>) -> Unit)? = null
+  private val pickMultipleImageOrVideo = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(4)) {
+    _onMultipleFileResult?.invoke(it)
+    _onMultipleFileResult = null
+  }
+
+  fun pickMultipleImageOrVideo(onResult: (List<Uri>) -> Unit) {
+    _onMultipleFileResult = { uris ->
+      val mediaInfo = uris.mapNotNull {
+        try {
+          MediaInfo(it, Date().toString(), contentResolver.getType(it)!!)
+        } catch (e: Exception) {
+          null
+        }
+      }
+
+      mediaInfo
+        .map(::createVideoThumbnail)
+        .map(MediaInfo::uri)
+        .let(onResult)
+    }
+
+    pickMultipleImageOrVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+  }
+```

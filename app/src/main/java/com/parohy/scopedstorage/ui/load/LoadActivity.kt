@@ -9,12 +9,14 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
 import com.parohy.scopedstorage.R
 import com.parohy.scopedstorage.ui.save.SaveActivity
 import java.io.File
+import java.util.Date
 
 /*Preco sa pouziva MediaStore a nepracujem s Enviroment.getExternalStoragePublicDirectory ?
 * 1. Enviroment vracia priamo cestu k suboru.
@@ -198,6 +200,18 @@ open class LoadActivity: SaveActivity() {
   }
   /*endregion*/
 
+  /*region Screen.LoadFile.Document.PublicStorage.CustomMultiple*/
+  private var _onMultipleFileResult: ((List<Uri>) -> Unit)? = null
+  private val openMultipleDocuments = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris: List<Uri> ->
+    _onMultipleFileResult?.invoke(uris)
+    _onMultipleFileResult = null
+  }
+
+  fun openMultipleDocumentsSAF(onResult: (List<Uri>) -> Unit) {
+    _onMultipleFileResult = onResult
+    openMultipleDocuments.launch(arrayOf("application/pdf"))
+  }
+  /*endregion*/
 
   /*region Screen.LoadFile.Gallery.PublicStorage.Pictures*/
   /*Tako query nacita vsetky obrazky z telefonu, nie len z Pictures*/
@@ -461,6 +475,50 @@ open class LoadActivity: SaveActivity() {
         cursor.close()
       }
     }
+  /*endregion*/
+
+  /*region Screen.LoadFile.Gallery.PublicStorage.Picker*/
+  /*region SinglePicker*/
+  private val pickSingleImageOrVideo = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
+    _onFileResult?.invoke(it)
+    _onFileResult = null
+  }
+
+  fun pickSingleImageOrVideo(onResult: (Uri?) -> Unit) {
+    _onFileResult = {
+      if (it != null)
+        MediaInfo(it, Date().toString(), contentResolver.getType(it) ?: "").let(::createVideoThumbnail).uri.let(onResult)
+    }
+    pickSingleImageOrVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+  }
+  /*endregion*/
+
+  /*region MultiplePicker*/
+  private val pickMultipleImageOrVideo = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(4)) {
+    _onMultipleFileResult?.invoke(it)
+    _onMultipleFileResult = null
+    Intent.EXTRA_ALLOW_MULTIPLE
+  }
+
+  fun pickMultipleImageOrVideo(onResult: (List<Uri>) -> Unit) {
+    _onMultipleFileResult = { uris ->
+      val mediaInfo = uris.mapNotNull {
+        try {
+          MediaInfo(it, Date().toString(), contentResolver.getType(it)!!)
+        } catch (e: Exception) {
+          null
+        }
+      }
+
+      mediaInfo
+        .map(::createVideoThumbnail)
+        .map(MediaInfo::uri)
+        .let(onResult)
+    }
+
+    pickMultipleImageOrVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+  }
+  /*endregion*/
   /*endregion*/
 
   /*region Screen.LoadFile.Folder.PublicStorage*/

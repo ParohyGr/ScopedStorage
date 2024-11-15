@@ -30,10 +30,19 @@ fun LoadGalleryFromPickerPublic() {
       images.value = emptyList()
     }
 
-    if (images.value.isEmpty())
-      SSButton(text = "Load from directory") {
-
+    if (images.value.isEmpty()) {
+      SSButton(text = "Pick single image or video") {
+        activity.pickSingleImageOrVideo {
+          if (it != null)
+            images.value = listOf(it)
+        }
       }
+      SSButton(text = "Pick multiple image or video") {
+        activity.pickMultipleImageOrVideo {
+          images.value = it
+        }
+      }
+    }
     else
       BoxWithConstraints {
         val h = remember { maxWidth / 3 }

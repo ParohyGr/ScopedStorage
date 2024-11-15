@@ -88,6 +88,8 @@ sealed interface Screen: Parcelable {
         data object Downloads: PublicStorage()
         @Parcelize
         data object CustomDirectory: PublicStorage()
+        @Parcelize
+        data object CustomMultiple: PublicStorage()
       }
     }
     /*endregion*/
@@ -386,11 +388,13 @@ private fun NavController.LoadFileRouter(destination: Screen.LoadFile) =
         is Screen.LoadFile.Document.PublicStorage.Documents -> LoadDocumentFromPublicDocuments()
         is Screen.LoadFile.Document.PublicStorage.Downloads -> LoadDocumentFromPublicDownloads()
         is Screen.LoadFile.Document.PublicStorage.CustomDirectory -> LoadDocumentFromPublicCustom()
+        is Screen.LoadFile.Document.PublicStorage.CustomMultiple -> LoadDocumentFromPublicCustomMultiple()
         is Screen.LoadFile.Document.PublicStorage ->
-          WhichDocumentPublic(
+          WhichDocumentPublicLoad(
             goToDocuments = { navigate(Screen.LoadFile.Document.PublicStorage.Documents) },
             goToDownloads = { navigate(Screen.LoadFile.Document.PublicStorage.Downloads) },
             goToCustom = { navigate(Screen.LoadFile.Document.PublicStorage.CustomDirectory) },
+            goToCustomMultiple = { navigate(Screen.LoadFile.Document.PublicStorage.CustomMultiple) },
           )
         else ->
           WhichType(
@@ -518,7 +522,7 @@ private fun NavController.SaveFileRouter(destination: Screen.SaveFile) =
         is Screen.SaveFile.Document.PublicStorage.Downloads -> SaveDocumentPublicDownloads()
         is Screen.SaveFile.Document.PublicStorage.CustomDirectory -> SaveDocumentPublicCustom()
         is Screen.SaveFile.Document.PublicStorage ->
-          WhichDocumentPublic(
+          WhichDocumentPublicSave(
             goToDocuments = { navigate(Screen.SaveFile.Document.PublicStorage.Documents) },
             goToDownloads = { navigate(Screen.SaveFile.Document.PublicStorage.Downloads) },
             goToCustom = { navigate(Screen.SaveFile.Document.PublicStorage.CustomDirectory) }
