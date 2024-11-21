@@ -3,7 +3,6 @@ package com.parohy.scopedstorage.ui.save.picture
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,12 +22,6 @@ fun SavePicturePublicCustom() {
   EndScreen(title = "Odfotim obrazok") {
     val imageUri = mutable<Uri?>(null)
 
-    val onClick = {
-      activity.capturePhotoAndStoreToCustom {
-        imageUri.value = it
-      }
-    }
-
     BackHandler(imageUri.value != null) {
       imageUri.value = null
     }
@@ -37,11 +30,20 @@ fun SavePicturePublicCustom() {
       imageUri.value?.also {
         Text(text = it.toString())
         Image(
-          modifier = Modifier.sizeIn(100.dp, 100.dp).clickable { onClick() },
+          modifier = Modifier.sizeIn(100.dp, 100.dp),
           painter = rememberAsyncImagePainter(it),
           contentDescription = "Obrazok")
       } ?: run {
-        SSButton(text = "Odfotit obrazok", onClick = onClick)
+        SSButton(text = "Odfotit obrazok", onClick = {
+          activity.capturePhotoAndStoreToCustom {
+            imageUri.value = it
+          }
+        })
+        SSButton(text = "Odfotit obrazok do \"MojPricinok\"", onClick = {
+          activity.capturePhotoAndStoreToCustom("MojPriecinok") {
+            imageUri.value = it
+          }
+        })
       }
     }
   }

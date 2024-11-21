@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import com.parohy.scopedstorage.ui.save.document.createPdfFile
+import java.io.File
 
 /*Kedy pouzit MediaStore a kedy SAF
 * MediaStore
@@ -114,7 +115,7 @@ open class SaveActivity: ComponentActivity() {
 
     val collection: Uri =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/")
+        contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI
       } else {
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
@@ -231,6 +232,60 @@ open class SaveActivity: ComponentActivity() {
   }
   /*endregion*/
 
+  /*region Odfotim a ulozim viem kam*/
+  fun capturePhotoAndStoreToCustom(dirName: String, onResult: (Uri?) -> Unit) {
+    val fileName = "Custom_SS_${System.currentTimeMillis()}.jpg"
+
+    val contentValues = ContentValues().apply {
+      put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+      put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+    }
+
+    val collectionUri = MediaStore.Files.getContentUri("external")
+
+    val blockSdk28 = {
+      val env = Environment.getExternalStorageDirectory()
+      val dir = File("$env/$dirName")
+
+      // POZOR! Je potrebne skontrolovat ci existuje
+      if (!dir.exists())
+        dir.mkdirs()
+
+      val filePath = "${dir.absolutePath}/$fileName"
+
+      contentValues.put(MediaStore.MediaColumns.DATA, filePath)
+
+      val uri = contentResolver.insert(collectionUri, contentValues)
+      if (uri != null) //TODO: Handluj ak null
+        capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
+    }
+
+    val blockSdk29 = {
+      contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/$dirName")
+
+      val uri = contentResolver.insert(collectionUri, contentValues)
+      if (uri != null) //TODO: Handluj ak null
+        capturePhoto(uri, onResult) //TODO: Handluj ak sa nepodari odfotit/cancelne odfotenie
+    }
+
+    /*Pre Android 10+ nepotrebujem si pytat WRITE_EXTERNAL_STORAGE*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+      if (isGranted(android.Manifest.permission.CAMERA))
+        blockSdk29()
+      else
+        requestPermission(android.Manifest.permission.CAMERA) {
+          blockSdk29()
+        }
+    else
+      if (isGranted(android.Manifest.permission.CAMERA) && isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        blockSdk28()
+      else
+        requestMultiplePermissions(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+          blockSdk28()
+        }
+  }
+  /*endregion*/
+
   /*region Nakamerujem a ulozim do Movies*/
   private fun Context.videoUriInsideMovies(fileName: String): Uri? {
     val contentValues = ContentValues().apply {
@@ -240,7 +295,7 @@ open class SaveActivity: ComponentActivity() {
 
     val collection: Uri =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/")
+        contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES)
         MediaStore.Video.Media.EXTERNAL_CONTENT_URI
       } else {
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)

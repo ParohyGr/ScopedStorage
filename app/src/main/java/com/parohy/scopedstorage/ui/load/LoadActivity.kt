@@ -258,7 +258,7 @@ open class LoadActivity: SaveActivity() {
         }
       }
       else // Ak este nemam pristup, tak si ho poprosim
-        requestPermission(android.Manifest.permission.READ_MEDIA_IMAGES) { // READ_MEDIA_IMAGES alebo READ_MEDIA_VIDEO ma rovnaky vysledok
+        requestPermission(android.Manifest.permission.READ_MEDIA_IMAGES) {
           onResult(block())
         }
     // Pre Android 12 a nizsie staci READ_EXTERNAL_STORAGE
@@ -497,7 +497,6 @@ open class LoadActivity: SaveActivity() {
   private val pickMultipleImageOrVideo = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(4)) {
     _onMultipleFileResult?.invoke(it)
     _onMultipleFileResult = null
-    Intent.EXTRA_ALLOW_MULTIPLE
   }
 
   fun pickMultipleImageOrVideo(onResult: (List<Uri>) -> Unit) {
